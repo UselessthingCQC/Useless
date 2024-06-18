@@ -3,113 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Useless Button Competition</title>
+    <title>Useless Button</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #333;
+            background-color: #111;
             color: #fff;
-        }
-        .container {
+            font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #444;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 50px;
         }
-        button {
-            padding: 15px 30px;
-            font-size: 20px;
-            color: #fff;
-            background-color: #000;
-            border: 2px solid #fff;
-            border-radius: 5px;
+        .button-container {
+            margin-top: 50px;
+        }
+        .button {
+            background-color: #555;
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 24px;
+            margin: 10px 2px;
             cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background-color 0.3s;
         }
-        button:hover {
-            background-color: #fff;
-            color: #000;
+        .button:hover {
+            background-color: #888;
         }
-        #clickCounter, #leaderboard {
+        #counter {
             margin-top: 20px;
             font-size: 18px;
         }
-        #leaderboardList {
-            list-style-type: none;
+        .leaderboard {
+            margin-top: 50px;
+        }
+        .leaderboard h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .leaderboard ul {
+            list-style: none;
             padding: 0;
         }
-        #leaderboardList li {
-            margin-bottom: 10px;
-            padding: 5px;
-            background-color: #666;
-            border-radius: 5px;
+        .leaderboard li {
+            font-size: 18px;
+            background-color: #222;
+            margin: 5px 0;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button id="uselessButton">Click Me!</button>
-        <div id="clickCounter">Button clicked 0 times</div>
-        <div id="leaderboard">
-            <h2>Leaderboard</h2>
-            <ul id="leaderboardList"></ul>
-        </div>
+    <h1>The Useless Button</h1>
+    <div class="button-container">
+        <button class="button" id="uselessButton">Click Me!</button>
+        <div id="counter">Total Clicks: 0</div>
+    </div>
+    <div class="leaderboard">
+        <h2>Leaderboard</h2>
+        <ul id="leaderboardList"></ul>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js"></script>
+
     <script>
         // Your web app's Firebase configuration
         var firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyA8x21PgArktzWtWFopDT8XNfhxiVcVIfA",
+            authDomain: "uselessbutton-e267d.firebaseapp.com",
+            projectId: "uselessbutton-e267d",
+            storageBucket: "uselessbutton-e267d.appspot.com",
+            messagingSenderId: "269585692440",
+            appId: "1:269585692440:web:c9761e284389460eced06d"
         };
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        let count = 0;
-        const button = document.getElementById('uselessButton');
-        const counterDisplay = document.getElementById('clickCounter');
-        const leaderboardList = document.getElementById('leaderboardList');
+        // Reference to the 'clicks' collection
+        const clicksRef = db.collection('clicks');
 
-        button.addEventListener('click', function() {
-            count++;
-            counterDisplay.textContent = `Button clicked ${count} times`;
-
-            // Store click count in Firestore
-            db.collection('clicks').add({
+        // Add a new document with a generated id.
+        function addClick() {
+            clicksRef.add({
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                console.log("Click recorded");
-            }).catch((error) => {
-                console.error("Error recording click: ", error);
+                console.log("Click added!");
+                updateClickCount();
             });
-        });
+        }
 
-        // Retrieve and display leaderboard
-        db.collection('clicks').orderBy('timestamp', 'desc').limit(10)
-            .onSnapshot(snapshot => {
-                leaderboardList.innerHTML = '';
-                snapshot.forEach(doc => {
-                    let li = document.createElement('li');
-                    li.textContent = `User clicked at ${doc.data().timestamp.toDate()}`;
-                    leaderboardList.appendChild(li);
-                });
-            }, (error) => {
-                console.error("Error retrieving leaderboard: ", error);
+        // Update the click counter
+        function updateClickCount() {
+            clicksRef.get().then((querySnapshot) => {
+                const totalClicks = querySnapshot.size;
+                document.getElementById('counter').textContent = `Total Clicks: ${totalClicks}`;
+                updateLeaderboard();
             });
+        }
+
+        // Update the leaderboard
+        function updateLeaderboard() {
+            clicksRef.orderBy('timestamp', 'desc').limit(10).get().then((querySnapshot) => {
+                const leaderboardList = document.getElementById('leaderboardList');
+                leaderboardList.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = doc.id;
+                    leaderboardList.appendChild(listItem);
+                });
+            });
+        }
+
+        document.getElementById('uselessButton').addEventListener('click', addClick);
+
+        // Initial load
+        updateClickCount();
     </script>
 </body>
 </html>
