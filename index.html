@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Useless Button Competition</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #333;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            background-color: #444;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            color: #fff;
+            background-color: #000;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        button:hover {
+            background-color: #fff;
+            color: #000;
+        }
+        #clickCounter, #leaderboard {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #leaderboardList {
+            list-style-type: none;
+            padding: 0;
+        }
+        #leaderboardList li {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #666;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="uselessButton">Click Me!</button>
+        <div id="clickCounter">Button clicked 0 times</div>
+        <div id="leaderboard">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboardList"></ul>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script>
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+
+        let count = 0;
+        const button = document.getElementById('uselessButton');
+        const counterDisplay = document.getElementById('clickCounter');
+        const leaderboardList = document.getElementById('leaderboardList');
+
+        button.addEventListener('click', function() {
+            count++;
+            counterDisplay.textContent = `Button clicked ${count} times`;
+
+            // Store click count in Firestore
+            db.collection('clicks').add({
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                console.log("Click recorded");
+            }).catch((error) => {
+                console.error("Error recording click: ", error);
+            });
+        });
+
+        // Retrieve and display leaderboard
+        db.collection('clicks').orderBy('timestamp', 'desc').limit(10)
+            .onSnapshot(snapshot => {
+                leaderboardList.innerHTML = '';
+                snapshot.forEach(doc => {
+                    let li = document.createElement('li');
+                    li.textContent = `User clicked at ${doc.data().timestamp.toDate()}`;
+                    leaderboardList.appendChild(li);
+                });
+            }, (error) => {
+                console.error("Error retrieving leaderboard: ", error);
+            });
+    </script>
+</body>
+</html>
